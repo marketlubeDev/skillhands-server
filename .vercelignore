@@ -1,0 +1,7 @@
+# This is a serverless function project, not a static site
+# No public directory needed
+public/
+dist/
+build/
+.next/
+.nuxt/
