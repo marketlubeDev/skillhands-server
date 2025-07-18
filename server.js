@@ -61,7 +61,7 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "OK", message: "Server is running" });
 });
 
-app.use("/", (req, res) => {
+app.get("/", (req, res) => {
   res.json({
     success: true,
     message: "Server is running",
@@ -71,6 +71,14 @@ app.use("/", (req, res) => {
 // Contact form submission endpoint with file upload
 app.post("/api/contact", upload.single("image"), async (req, res) => {
   try {
+    // Ensure req.body exists and is an object
+    if (!req.body || typeof req.body !== "object") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request body",
+      });
+    }
+
     const {
       service,
       description,
@@ -134,6 +142,23 @@ app.post("/api/contact", upload.single("image"), async (req, res) => {
   }
 });
 
+// Multer error handling middleware
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === "LIMIT_FILE_SIZE") {
+      return res.status(400).json({
+        success: false,
+        message: "File too large. Maximum size is 10MB.",
+      });
+    }
+    return res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+  next(error);
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -152,7 +177,13 @@ app.use("*", (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
-});
+// For local development
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+  });
+}
+
+// Export for Vercel serverless deployment
+export default app;
