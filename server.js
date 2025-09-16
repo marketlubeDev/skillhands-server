@@ -1,10 +1,11 @@
 import express from "express";
-import cors from "cors";
-import helmet from "helmet";
-// import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
-import multer from "multer";
-import { sendEmail } from "./services/emailService.js";
+import { applySecurity } from "./middleware/security.js";
+import { applyCors } from "./middleware/cors.js";
+import { multerErrorHandler } from "./middleware/uploads.js";
+import { errorHandler, notFound } from "./middleware/errors.js";
+import apiRoutes from "./routes/index.js";
+import { connectDatabase } from "./config/db.js";
 
 // Load environment variables
 dotenv.config();
@@ -13,7 +14,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Security middleware
-app.use(helmet());
+applySecurity(app);
 
 // Rate limiting
 // const limiter = rateLimit({
@@ -23,159 +24,32 @@ app.use(helmet());
 // });
 // app.use("/api/", limiter);
 
-// CORS configuration - Allow all origins
-app.use(
-  cors({
-    origin: "*",
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  })
-);
-
-// Configure multer for file uploads (memory storage - no file saved to disk)
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
-  fileFilter: function (req, file, cb) {
-    // Accept images and videos
-    if (
-      file.mimetype.startsWith("image/") ||
-      file.mimetype.startsWith("video/")
-    ) {
-      cb(null, true);
-    } else {
-      cb(new Error("Only image and video files are allowed!"), false);
-    }
-  },
-});
+// CORS
+applyCors(app);
 
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Health check endpoint
-app.get("/api/health", (req, res) => {
-  res.json({ status: "OK", message: "Server is running" });
+// Database connection
+connectDatabase().catch((err) => {
+  // eslint-disable-next-line no-console
+  console.error("Failed to connect to MongoDB:", err);
+  process.exit(1);
 });
 
+// Routes
 app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "Server is running",
-  });
+  res.json({ success: true, message: "Server is running" });
 });
+app.use("/api", apiRoutes);
 
-// Contact form submission endpoint with file upload
-app.post("/api/contact", upload.single("image"), async (req, res) => {
-  try {
-    // Ensure req.body exists and is an object
-    if (!req.body || typeof req.body !== "object") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid request body",
-      });
-    }
-
-    const {
-      service,
-      description,
-      preferredDate,
-      preferredTime,
-      name,
-      phone,
-      email,
-      address,
-      city,
-      zip,
-    } = req.body;
-
-    // Validate required fields
-    if (!service || !name || !phone || !address || !city || !zip) {
-      return res.status(400).json({
-        success: false,
-        message: "Missing required fields",
-      });
-    }
-
-    // Get uploaded file info (stored in memory)
-    const uploadedFile = req.file;
-    let fileData = null;
-
-    if (uploadedFile) {
-      fileData = {
-        buffer: uploadedFile.buffer,
-        originalname: uploadedFile.originalname,
-        mimetype: uploadedFile.mimetype,
-      };
-    }
-
-    // Send email
-    const emailResult = await sendEmail({
-      service,
-      description,
-      preferredDate,
-      preferredTime,
-      name,
-      phone,
-      email,
-      address,
-      city,
-      zip,
-      fileData,
-    });
-
-    res.json({
-      success: true,
-      message: "Service request submitted successfully!",
-      data: emailResult,
-    });
-  } catch (error) {
-    console.error("Error submitting contact form:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to submit service request. Please try again.",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
-  }
-});
-
-// Multer error handling middleware
-app.use((error, req, res, next) => {
-  if (error instanceof multer.MulterError) {
-    if (error.code === "LIMIT_FILE_SIZE") {
-      return res.status(400).json({
-        success: false,
-        message: "File too large. Maximum size is 10MB.",
-      });
-    }
-    return res.status(400).json({
-      success: false,
-      message: error.message,
-    });
-  }
-  next(error);
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    success: false,
-    message: "Something went wrong!",
-    error: process.env.NODE_ENV === "development" ? err.message : undefined,
-  });
-});
+// Multer error handling and general errors
+app.use(multerErrorHandler);
+app.use(errorHandler);
 
 // 404 handler
-app.use("*", (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "Route not found",
-  });
-});
+app.use("*", notFound);
 
 // For local development
 if (process.env.NODE_ENV !== "production") {
