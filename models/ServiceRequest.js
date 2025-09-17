@@ -20,9 +20,17 @@ const ServiceRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["new", "in_progress", "completed", "cancelled"],
+      enum: ["new", "pending", "in-process", "completed", "cancelled"],
       default: "new",
     },
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high", "urgent"],
+      default: "medium",
+      trim: true,
+    },
+    scheduledDate: { type: String, trim: true, default: null },
+    scheduledTime: { type: String, trim: true, default: null },
   },
   { timestamps: true }
 );
