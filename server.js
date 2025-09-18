@@ -35,7 +35,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 connectDatabase().catch((err) => {
   // eslint-disable-next-line no-console
   console.error("Failed to connect to MongoDB:", err);
-  process.exit(1);
+  // Do not exit in serverless; continue so health routes still respond
 });
 
 // Routes
