@@ -15,6 +15,14 @@ export const applyCors = (app) => {
         "*",
       ];
 
+  // Include Vercel deployment URL if available
+  if (process.env.VERCEL_URL) {
+    const vercelOrigin = `https://${process.env.VERCEL_URL}`;
+    if (!allowedOrigins.includes(vercelOrigin)) {
+      allowedOrigins.push(vercelOrigin);
+    }
+  }
+
   const isWildcard = allowedOrigins.includes("*");
 
   const corsOptions = {
@@ -23,10 +31,8 @@ export const applyCors = (app) => {
       if (!origin) return callback(null, true);
       if (isWildcard) return callback(null, true);
       const isAllowed = allowedOrigins.some((o) => o === origin);
-      return callback(
-        isAllowed ? null : new Error("Not allowed by CORS"),
-        isAllowed
-      );
+      // Do not throw on disallowed origins; disable CORS instead of 500 error
+      return callback(null, isAllowed);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
