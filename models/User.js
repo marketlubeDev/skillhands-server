@@ -18,6 +18,9 @@ const userSchema = new mongoose.Schema(
       index: true,
     },
     isActive: { type: Boolean, default: true },
+    // Password reset via OTP
+    resetOtpCode: { type: String, index: true },
+    resetOtpExpires: { type: Date, index: true },
   },
   { timestamps: true }
 );

@@ -494,6 +494,26 @@ export const sendEmail = async (data) => {
   }
 };
 
+export const sendOtpEmail = async ({ to, otp }) => {
+  const transporter = createTransporter();
+  const mailOptions = {
+    from: process.env.EMAIL_FROM,
+    to,
+    subject: "Your SkillHands password reset code",
+    text: `Your one-time password (OTP) is ${otp}. It expires in 10 minutes. If you didn't request this, you can ignore this email.`,
+    html: `
+      <div style="font-family:Segoe UI,Tahoma,Geneva,Verdana,sans-serif;line-height:1.6;color:#1f2937">
+        <h2 style="margin:0 0 8px">Password reset code</h2>
+        <p style="margin:0 0 16px">Use the following one-time password (OTP) to reset your password. This code expires in <strong>10 minutes</strong>.</p>
+        <div style="font-size:28px;font-weight:700;letter-spacing:4px;background:#111827;color:#fff;display:inline-block;padding:12px 16px;border-radius:8px">${otp}</div>
+        <p style="margin:16px 0 0;color:#6b7280;font-size:14px">If you did not request a password reset, you can safely ignore this email.</p>
+      </div>
+    `,
+  };
+  const result = await transporter.sendMail(mailOptions);
+  return { success: true, messageId: result.messageId };
+};
+
 // Test email configuration
 export const testEmailConfig = async () => {
   try {
