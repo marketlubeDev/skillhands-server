@@ -20,7 +20,7 @@ const ServiceRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["new", "pending", "in-process", "completed", "cancelled"],
+      enum: ["new", "pending", "in-process", "in-progress", "completed", "cancelled"],
       default: "pending",
     },
     priority: {
@@ -31,6 +31,22 @@ const ServiceRequestSchema = new mongoose.Schema(
     },
     scheduledDate: { type: String, trim: true, default: null },
     scheduledTime: { type: String, trim: true, default: null },
+    estimatedCost: { type: Number, default: 0 },
+    customerName: { type: String, trim: true },
+    customerEmail: { type: String, trim: true, lowercase: true },
+    customerPhone: { type: String, trim: true },
+    serviceType: { type: String, trim: true },
+    // Employee assignment fields
+    assignedEmployee: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'Profile',
+      default: null 
+    },
+    employeeAccepted: { type: Boolean, default: false },
+    employeeAcceptedAt: { type: Date, default: null },
+    employeeRemarks: { type: String, trim: true, default: "" },
+    completedAt: { type: Date, default: null },
+    completionNotes: { type: String, trim: true, default: "" },
   },
   { timestamps: true }
 );

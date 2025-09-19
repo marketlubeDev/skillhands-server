@@ -51,3 +51,16 @@ export const updateUserRole = async (req, res, next) => {
     next(err);
   }
 };
+
+export const getEmployees = async (req, res, next) => {
+  try {
+    const employees = await User.find({ 
+      role: "employee", 
+      isActive: true 
+    }).select('_id name email').sort({ name: 1 });
+    
+    res.json({ success: true, data: employees });
+  } catch (err) {
+    next(err);
+  }
+};

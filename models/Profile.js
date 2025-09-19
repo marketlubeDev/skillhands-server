@@ -65,6 +65,16 @@ const profileSchema = new mongoose.Schema(
     // Additional fields
     profileComplete: { type: Boolean, default: false },
     lastUpdated: { type: Date, default: Date.now },
+    
+    // Dashboard fields
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    rating: { type: Number, min: 0, max: 5, default: 0 },
+    totalJobs: { type: Number, min: 0, default: 0 },
+    appliedDate: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );

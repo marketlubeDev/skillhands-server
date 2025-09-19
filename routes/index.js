@@ -5,6 +5,7 @@ import serviceRequestsRouter from "./serviceRequests.js";
 import authRouter from "./auth.js";
 import usersRouter from "./users.js";
 import profileRouter from "./profile.js";
+import dashboardRouter from "./dashboard.js";
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.use("/service-requests", serviceRequestsRouter);
 router.use("/auth", authRouter);
 router.use("/users", usersRouter);
 router.use("/profile", profileRouter);
+router.use("/dashboard", dashboardRouter);
 
 export default router;
