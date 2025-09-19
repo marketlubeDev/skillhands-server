@@ -26,22 +26,48 @@ export const updateMyProfile = async (req, res, next) => {
       user.passwordHash = await bcrypt.hash(password, 10);
     }
 
-    // Prepare profile updates
+    // Prepare profile updates - all fields from the updated schema
     const profileFields = [
+      // Personal Information
+      "fullName",
+      "email",
       "phone",
+      "city",
       "addressLine1",
       "addressLine2",
-      "city",
       "state",
       "postalCode",
       "country",
       "avatarUrl",
       "bio",
+
+      // Professional Information
+      "level",
+      "expectedSalary",
+
+      // Skills & Certifications
+      "skills",
+      "certifications",
+      "workExperience",
+
+      // Verification Status
+      "verified",
+      "verificationStatus",
+      "verificationNotes",
+
+      // Additional fields
+      "profileComplete",
     ];
+
     const profileUpdate = {};
     for (const key of profileFields) {
-      if (req.body[key] !== undefined) profileUpdate[key] = req.body[key];
+      if (req.body[key] !== undefined) {
+        profileUpdate[key] = req.body[key];
+      }
     }
+
+    // Update lastUpdated timestamp
+    profileUpdate.lastUpdated = new Date();
 
     await user.save();
 
@@ -61,6 +87,120 @@ export const updateMyProfile = async (req, res, next) => {
         .status(409)
         .json({ success: false, message: "Email already in use" });
     }
+    next(err);
+  }
+};
+
+// Upload profile image
+export const uploadProfileImage = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
+    }
+
+    const profile = await Profile.findOne({ user: req.user._id });
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found",
+      });
+    }
+
+    // Update avatar URL (assuming file is uploaded to a service like AWS S3, Cloudinary, etc.)
+    profile.avatarUrl = req.file.path || req.file.filename;
+    profile.lastUpdated = new Date();
+    await profile.save();
+
+    return res.json({
+      success: true,
+      message: "Profile image uploaded successfully",
+      avatarUrl: profile.avatarUrl,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Upload certificates
+export const uploadCertificates = async (req, res, next) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No files uploaded",
+      });
+    }
+
+    const profile = await Profile.findOne({ user: req.user._id });
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found",
+      });
+    }
+
+    // Process uploaded files
+    const newCertifications = req.files.map((file) => ({
+      name: file.originalname,
+      fileUrl: file.path || file.filename,
+      uploadedAt: new Date(),
+    }));
+
+    // Add new certifications to existing ones
+    profile.certifications = [
+      ...(profile.certifications || []),
+      ...newCertifications,
+    ];
+    profile.lastUpdated = new Date();
+    await profile.save();
+
+    return res.json({
+      success: true,
+      message: "Certificates uploaded successfully",
+      certifications: profile.certifications,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Get profile completion status
+export const getProfileCompletion = async (req, res, next) => {
+  try {
+    const profile = await Profile.findOne({ user: req.user._id });
+    if (!profile) {
+      return res.json({
+        success: true,
+        completion: 0,
+        missingFields: [],
+      });
+    }
+
+    const requiredFields = [
+      "fullName",
+      "email",
+      "phone",
+      "city",
+      "level",
+      "skills",
+    ];
+
+    const missingFields = requiredFields.filter((field) => !profile[field]);
+    const completion = Math.round(
+      ((requiredFields.length - missingFields.length) / requiredFields.length) *
+        100
+    );
+
+    return res.json({
+      success: true,
+      completion,
+      missingFields,
+      profileComplete: completion >= 80,
+    });
+  } catch (err) {
     next(err);
   }
 };
