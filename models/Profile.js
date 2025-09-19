@@ -57,7 +57,7 @@ const profileSchema = new mongoose.Schema(
     verified: { type: Boolean, default: false },
     verificationStatus: {
       type: String,
-      enum: ["pending", "verified", "rejected"],
+      enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
     verificationNotes: { type: String, trim: true },

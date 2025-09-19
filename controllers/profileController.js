@@ -228,3 +228,87 @@ export const getProfileCompletion = async (req, res, next) => {
     next(err);
   }
 };
+
+// Get all employee profiles (admin only)
+export const getAllEmployeeProfiles = async (req, res, next) => {
+  try {
+    const profiles = await Profile.find({})
+      .populate("user", "name email role isActive createdAt")
+      .sort({ createdAt: -1 });
+
+    // Transform profiles to match EmployeeApplication interface
+    const employeeApplications = profiles.map((profile) => ({
+      id: profile._id.toString(),
+      name: profile.fullName || profile.user?.name || "Unknown",
+      email: profile.email || profile.user?.email || "",
+      phone: profile.phone || "",
+      skills: profile.skills || [],
+      experienceLevel: profile.level || "Beginner",
+      rating: profile.rating || 0,
+      previousJobCount: profile.totalJobs || 0,
+      certifications: (profile.certifications || []).map(
+        (cert) => cert.name || cert
+      ),
+      expectedSalary: profile.expectedSalary || 0,
+      status: profile.verificationStatus || "pending",
+      appliedDate: profile.createdAt || new Date(),
+      location: profile.city || "Unknown",
+      avatarUrl: profile.avatarUrl,
+      bio: profile.bio,
+      verified: profile.verified || false,
+      verificationNotes: profile.verificationNotes,
+      user: profile.user,
+    }));
+
+    return res.json({
+      success: true,
+      data: employeeApplications,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Update employee application status (admin only)
+export const updateEmployeeStatus = async (req, res, next) => {
+  try {
+    const { profileId } = req.params;
+    const { status, verificationNotes } = req.body;
+
+    if (!["pending", "approved", "rejected"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Must be pending, approved, or rejected",
+      });
+    }
+
+    const profile = await Profile.findById(profileId).populate(
+      "user",
+      "name email role isActive createdAt"
+    );
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found",
+      });
+    }
+
+    profile.verificationStatus = status;
+    if (verificationNotes) {
+      profile.verificationNotes = verificationNotes;
+    }
+    profile.verified = status === "approved";
+    profile.lastUpdated = new Date();
+
+    await profile.save();
+
+    return res.json({
+      success: true,
+      message: `Employee application ${status} successfully`,
+      data: profile,
+    });
+  } catch (err) {
+    next(err);
+  }
+};

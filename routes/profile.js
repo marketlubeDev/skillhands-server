@@ -5,8 +5,10 @@ import {
   uploadProfileImage,
   uploadCertificates,
   getProfileCompletion,
+  getAllEmployeeProfiles,
+  updateEmployeeStatus,
 } from "../controllers/profileController.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
 import { upload } from "../middleware/uploads.js";
 
 const router = express.Router();
@@ -25,5 +27,9 @@ router.post(
   upload.array("certificates", 10),
   uploadCertificates
 );
+
+// Admin-only routes for employee management
+router.get("/all", requireRole("admin"), getAllEmployeeProfiles);
+router.patch("/:profileId/status", requireRole("admin"), updateEmployeeStatus);
 
 export default router;
