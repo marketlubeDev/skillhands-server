@@ -6,6 +6,7 @@ import { multerErrorHandler } from "./middleware/uploads.js";
 import { errorHandler, notFound } from "./middleware/errors.js";
 import apiRoutes from "./routes/index.js";
 import { connectDatabase } from "./config/db.js";
+import { seedAdminUser } from "./utils/seedAdmin.js";
 
 // Load environment variables
 dotenv.config();
@@ -37,6 +38,11 @@ connectDatabase().catch((err) => {
   console.error("Failed to connect to MongoDB:", err);
   // Do not exit in serverless; continue so health routes still respond
 });
+
+// Seed admin user (best-effort)
+connectDatabase()
+  .then(() => seedAdminUser())
+  .catch(() => {});
 
 // Routes
 app.get("/", (req, res) => {

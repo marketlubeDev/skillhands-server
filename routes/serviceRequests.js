@@ -6,11 +6,13 @@ import {
   getServiceRequest,
   updateServiceRequest,
   deleteServiceRequest,
+  getServiceRequestsSummary,
 } from "../controllers/serviceRequestController.js";
 
 const router = express.Router();
 
 router.get("/", listServiceRequests);
+router.get("/summary", getServiceRequestsSummary);
 router.post("/", upload.single("attachment"), createServiceRequest);
 router.get("/:id", getServiceRequest);
 router.put("/:id", upload.single("attachment"), updateServiceRequest);

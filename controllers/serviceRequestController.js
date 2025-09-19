@@ -66,7 +66,30 @@ export const listServiceRequests = async (req, res) => {
       .skip((Number(page) - 1) * Number(limit))
       .limit(Number(limit));
     const total = await ServiceRequest.countDocuments(query);
-    return res.json({ success: true, data: docs, total });
+
+    // Calculate status counts for paginated response
+    const countsByStatus = await ServiceRequest.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const statusCounts = {};
+    countsByStatus.forEach((item) => {
+      statusCounts[item._id] = item.count;
+    });
+
+    return res.json({
+      success: true,
+      data: docs,
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      countsByStatus: statusCounts,
+    });
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("listServiceRequests error:", error);
@@ -120,5 +143,37 @@ export const deleteServiceRequest = async (req, res) => {
     return res.json({ success: true, message: "Deleted" });
   } catch (error) {
     return res.status(400).json({ success: false, message: "Invalid ID" });
+  }
+};
+
+export const getServiceRequestsSummary = async (req, res) => {
+  try {
+    const total = await ServiceRequest.countDocuments();
+
+    const countsByStatus = await ServiceRequest.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const statusCounts = {};
+    countsByStatus.forEach((item) => {
+      statusCounts[item._id] = item.count;
+    });
+
+    return res.json({
+      success: true,
+      total,
+      countsByStatus: statusCounts,
+    });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("getServiceRequestsSummary error:", error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Failed to get summary" });
   }
 };
