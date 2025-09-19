@@ -19,14 +19,16 @@ export const getMyProfile = async (req, res, next) => {
 
 export const updateMyProfile = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, fullName } = req.body;
     const user = await User.findById(req.user._id);
     if (!user)
       return res
         .status(404)
         .json({ success: false, message: "User not found" });
 
+    // Update user model fields
     if (name !== undefined) user.name = name;
+    if (fullName !== undefined) user.name = fullName; // Map fullName to user.name
     if (email !== undefined) user.email = String(email).toLowerCase();
     if (password) {
       user.passwordHash = await bcrypt.hash(password, 10);
@@ -177,7 +179,7 @@ export const uploadCertificates = async (req, res, next) => {
     return res.json({
       success: true,
       message: "Certificates uploaded successfully",
-      certifications: profile.certifications,
+      data: { certifications: profile.certifications },
     });
   } catch (err) {
     next(err);
