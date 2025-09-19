@@ -4,8 +4,14 @@ import Profile from "../models/Profile.js";
 
 export const getMyProfile = async (req, res, next) => {
   try {
-    const profile = await Profile.findOne({ user: req.user._id });
-    return res.json({ success: true, user: req.user.toSafeJSON(), profile });
+    const profile = await Profile.findOne({ user: req.user._id }).populate(
+      "user",
+      "name email role isActive createdAt"
+    );
+    return res.json({
+      success: true,
+      data: profile,
+    });
   } catch (err) {
     next(err);
   }
@@ -71,15 +77,26 @@ export const updateMyProfile = async (req, res, next) => {
 
     await user.save();
 
-    let profile = await Profile.findOne({ user: user._id });
+    let profile = await Profile.findOne({ user: user._id }).populate(
+      "user",
+      "name email role isActive createdAt"
+    );
     if (!profile) {
       profile = await Profile.create({ user: user._id, ...profileUpdate });
+      profile = await Profile.findOne({ user: user._id }).populate(
+        "user",
+        "name email role isActive createdAt"
+      );
     } else if (Object.keys(profileUpdate).length > 0) {
       Object.assign(profile, profileUpdate);
       await profile.save();
+      profile = await Profile.findOne({ user: user._id }).populate(
+        "user",
+        "name email role isActive createdAt"
+      );
     }
 
-    return res.json({ success: true, user: user.toSafeJSON(), profile });
+    return res.json({ success: true, data: profile });
   } catch (err) {
     // Handle duplicate email conflict
     if (err?.code === 11000) {
@@ -174,8 +191,11 @@ export const getProfileCompletion = async (req, res, next) => {
     if (!profile) {
       return res.json({
         success: true,
-        completion: 0,
-        missingFields: [],
+        data: {
+          completion: 0,
+          missingFields: [],
+          profileComplete: false,
+        },
       });
     }
 
@@ -196,9 +216,11 @@ export const getProfileCompletion = async (req, res, next) => {
 
     return res.json({
       success: true,
-      completion,
-      missingFields,
-      profileComplete: completion >= 80,
+      data: {
+        completion,
+        missingFields,
+        profileComplete: completion >= 80,
+      },
     });
   } catch (err) {
     next(err);
