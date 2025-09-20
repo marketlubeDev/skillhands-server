@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import Profile from "../models/Profile.js";
 
 export const listUsers = async (req, res, next) => {
   try {
@@ -54,11 +55,38 @@ export const updateUserRole = async (req, res, next) => {
 
 export const getEmployees = async (req, res, next) => {
   try {
-    const employees = await User.find({ 
-      role: "employee", 
-      isActive: true 
-    }).select('_id name email').sort({ name: 1 });
-    
+    const employees = await User.aggregate([
+      {
+        $match: {
+          role: "employee",
+          isActive: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "profiles",
+          localField: "_id",
+          foreignField: "user",
+          as: "profile",
+        },
+      },
+      {
+        $match: {
+          "profile.status": "approved",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          email: 1,
+        },
+      },
+      {
+        $sort: { name: 1 },
+      },
+    ]);
+
     res.json({ success: true, data: employees });
   } catch (err) {
     next(err);

@@ -50,6 +50,7 @@ export const updateMyProfile = async (req, res, next) => {
       "bio",
 
       // Professional Information
+      "designation",
       "level",
       "expectedSalary",
 

@@ -41,6 +41,7 @@ const profileSchema = new mongoose.Schema(
     bio: { type: String, trim: true },
 
     // Professional Information
+    designation: { type: String, trim: true },
     level: {
       type: String,
       enum: ["Beginner", "Intermediate", "Expert"],
@@ -65,7 +66,7 @@ const profileSchema = new mongoose.Schema(
     // Additional fields
     profileComplete: { type: Boolean, default: false },
     lastUpdated: { type: Date, default: Date.now },
-    
+
     // Dashboard fields
     status: {
       type: String,
