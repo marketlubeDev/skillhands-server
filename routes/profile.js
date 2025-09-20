@@ -6,6 +6,7 @@ import {
   uploadCertificates,
   getProfileCompletion,
   getAllEmployeeProfiles,
+  getEmployeeProfileById,
   updateEmployeeStatus,
 } from "../controllers/profileController.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
@@ -30,6 +31,7 @@ router.post(
 
 // Admin-only routes for employee management
 router.get("/all", requireRole("admin"), getAllEmployeeProfiles);
+router.get("/employee/:userId", requireRole("admin"), getEmployeeProfileById);
 router.patch("/:profileId/status", requireRole("admin"), updateEmployeeStatus);
 
 export default router;

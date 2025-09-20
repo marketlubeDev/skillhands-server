@@ -270,6 +270,32 @@ export const getAllEmployeeProfiles = async (req, res, next) => {
   }
 };
 
+// Get employee profile by user ID (admin only)
+export const getEmployeeProfileById = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    const profile = await Profile.findOne({ user: userId }).populate(
+      "user",
+      "name email role isActive createdAt"
+    );
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee profile not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: profile,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Update employee application status (admin only)
 export const updateEmployeeStatus = async (req, res, next) => {
   try {
